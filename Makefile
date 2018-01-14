@@ -24,3 +24,6 @@ install: $(GIT_RSYNC)
 
 uninstall:
 	$(RM) $(DESTDIR)$(gitexecdir)/$(GIT_RSYNC)
+
+clean:
+	$(RM) $(GIT_RSYNC)
