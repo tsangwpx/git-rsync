@@ -1,0 +1,5 @@
+# Temporary files
+*.sw[a-p]
+
+# Cache files
+*.py[co]
