@@ -53,6 +53,8 @@ def create_parser():
 
     transfer_parser = argparse.ArgumentParser(add_help=False)
     transfer_parser.add_argument('-n', '--dry-run', action='store_true', help='Dry run only')
+    transfer_parser.add_argument('--include-git-dir', action='store_true', default=False,
+            help='Include .git directory in transfer')
     transfer_parser.add_argument('name', help='remote name')
     transfer_parser.add_argument('pathspec', nargs='*', help='file paths in interest')
     subparsers.add_parser('download', parents=[transfer_parser])
@@ -161,6 +163,9 @@ def do_transfer(ns):
 
     if ns.verbose:
         rsync_cmds.append('-' + 'v' * ns.verbose)
+
+    if not ns.include_git_dir:
+        rsync_cmds.append('--exclude=.git/')
 
     if pathspec:
         for item in pathspec:
