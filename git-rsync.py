@@ -112,8 +112,28 @@ def do_remove(ns):
 
 
 def do_list(ns):
-    urls = config_get_regexp('{}\\.*\\.url'.format(GIT_CONFIG_SECTION))
-    print(urls)
+    import re
+
+    pattern = "{}\\.(.+)\\.url".format(GIT_CONFIG_SECTION)
+    data = config_get_regexp(pattern)
+
+    name_length = 0
+    urls = []
+
+    for key, url in data:
+        match = re.match(pattern, key)
+
+        if match:
+            name = match.group(1)
+            name_length = max(name_length, len(name))
+            urls.append((name, url))
+
+    if name_length > 20:
+        name_length = 20
+
+    fmt = "{: <" + str(name_length) + "}  {}"
+    for name, url in urls:
+        print(fmt.format(name, url))
 
 
 def do_transfer(ns):
