@@ -12,6 +12,11 @@ RSYNC_BIN = '/usr/bin/rsync'
 
 
 def debug(msg):
+    if not debug.verbose:
+        return
+
+    msg = '[debug] ' + str(msg)
+
     logger = debug.logger
     if not logger:
         import logging
@@ -27,6 +32,7 @@ def debug(msg):
     logger.debug(msg)
 
 
+debug.verbose = 0
 debug.logger = None
 
 
@@ -63,10 +69,11 @@ def parse():
 
 def main():
     ns = parse()
+
+    debug.verbose = ns.verbose
     command = ns.command
 
-    if ns.verbose:
-        print(ns)
+    debug(ns)
 
     if command == 'add':
         do_add(ns)
@@ -207,8 +214,6 @@ def config_get_regexp(regexp):
         return []
     elif process.returncode:
         raise RuntimeError('Unknown return code {}'.format(process.returncode))
-
-    print(process.stdout)
 
     return list(re.split('\s+', s, 2) for s in process.stdout.splitlines() if s)
 
