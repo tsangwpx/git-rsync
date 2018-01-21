@@ -52,6 +52,7 @@ def create_parser():
     list_parser = subparsers.add_parser('list')
 
     transfer_parser = argparse.ArgumentParser(add_help=False)
+    transfer_parser.add_argument('-v', '--verbose', action='count', default=0)
     transfer_parser.add_argument('-n', '--dry-run', action='store_true', help='Dry run only')
     transfer_parser.add_argument('--include-git-dir', action='store_true', default=False,
             help='Include .git directory in transfer')
