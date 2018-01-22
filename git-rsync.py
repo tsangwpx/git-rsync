@@ -124,6 +124,9 @@ def do_list(ns):
 
 
 def do_transfer(ns):
+    from gitrsync.pathspec import PathSpec
+    from gitrsync.translator import Translator
+
     command = ns.command
     dry_run = ns.dry_run
     name = ns.name
@@ -136,12 +139,11 @@ def do_transfer(ns):
     if not url:
         raise RuntimeError('Unknown remote name {}'.format(name))
 
-    prefix = git_rev_parse('show-prefix')
-
     rsync_cmds = [
         RSYNC_BIN,
         '-azP',
     ]
+    rsync_input = None
 
     if dry_run:
         rsync_cmds.append('-n')
@@ -153,17 +155,18 @@ def do_transfer(ns):
         rsync_cmds.append('--exclude=.git/')
 
     if pathspec:
-        for item in pathspec:
-            if item and item[0] == ':':
-                raise ValueError('Path starting with colon: {}'.format(item))
-            if os.path.isabs(item):
-                raise ValueError('Absolute path is not supported')
-            if '..' in item:
-                raise ValueError('No support for .. currently')
+        prefix = git_rev_parse('show-prefix')
 
-            rsync_cmds.append('--include=' + item)
+        ps = PathSpec.parse(pathspec)
+        translator = Translator(prefix, ps)
+        translator.translate()
+        filters = translator.filters
 
-        rsync_cmds.append('--exclude=*')
+        logger.debug('filter %s', filters)
+        rsync_cmds.append('--filter=merge -')
+        rsync_input = '\n'.join(filters)
+
+        prefix = translator.common_prefix
     else:
         prefix = ''
 
@@ -178,11 +181,15 @@ def do_transfer(ns):
 
     rsync_cmds.extend(direction)
 
+    toplevel = git_rev_parse('show-toplevel')
+    cwd = os.path.join(toplevel, prefix)
+
     logger.debug('command=%s,remotepath=%s', command, path)
     logger.debug('rsync=%s', rsync_cmds)
     logger.debug('cwd=%s', cwd)
 
-    subprocess.run(rsync_cmds)
+    subprocess.run(rsync_cmds, cwd=os.path.join(toplevel, prefix), input=rsync_input, encoding='UTF-8',
+                   universal_newlines=True)
 
 
 def git_rev_parse(command):
