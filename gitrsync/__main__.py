@@ -14,6 +14,7 @@ RSYNC_BIN = '/usr/bin/rsync'
 def create_parser():
     parser = argparse.ArgumentParser(prog=PROGRAM_NAME)
     parser.add_argument('-v', '--verbose', action='count', default=0)
+    parser.add_argument('--version', action='store_true', help='Show version')
 
     subparsers = parser.add_subparsers(dest='command')
 
@@ -45,7 +46,7 @@ def parse():
     return ns
 
 
-def launch():
+def main():
     ns = parse()
     log_level = None
 
@@ -61,7 +62,9 @@ def launch():
 
     logger.debug(ns)
 
-    if command == 'add':
+    if ns.version:
+        do_version(ns)
+    elif command == 'add':
         do_add(ns)
     elif command == 'remove':
         do_remove(ns)
@@ -69,6 +72,11 @@ def launch():
         do_list(ns)
     elif command == 'download' or command == 'upload':
         do_transfer(ns)
+
+
+def do_version(ns):
+    from . import __version__
+    print('%s' % (__version__,))
 
 
 def do_add(ns):
@@ -249,3 +257,7 @@ def config_remove_section(key):
         '--remove-section',
         key
     ])
+
+
+if __name__ == '__main__':
+    main()

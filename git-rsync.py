@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
 if __name__ == '__main__':
-    from gitrsync.main import launch
+    from gitrsync.__main__ import main
 
-    launch()
+    main()
