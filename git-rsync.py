@@ -1,39 +1,17 @@
 #!/usr/bin/python3
 
 import argparse
-import sys
-import subprocess
+import logging
 import os.path
+import subprocess
+
+logger = logging.getLogger(__name__)
 
 PROGRAM_NAME = 'git rsync'
 GIT_BIN = '/usr/bin/git'
 GIT_CONFIG_SECTION = 'rsync'
 RSYNC_BIN = '/usr/bin/rsync'
 
-
-def debug(msg):
-    if not debug.verbose:
-        return
-
-    msg = '[debug] ' + str(msg)
-
-    logger = debug.logger
-    if not logger:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.DEBUG)
-
-        handler = logging.StreamHandler(sys.stderr)
-        handler.setLevel(logging.DEBUG)
-        logger.addHandler(handler)
-
-        debug.logger = logger
-
-    logger.debug(msg)
-
-
-debug.verbose = 0
-debug.logger = None
 
 
 def create_parser():
@@ -72,11 +50,19 @@ def parse():
 
 def main():
     ns = parse()
+    log_level = None
 
-    debug.verbose = ns.verbose
+    if ns.verbose >= 2:
+        log_level = logging.DEBUG
+    elif ns.verbose >= 1:
+        log_level = logging.INFO
+
+    if log_level is not None:
+        logging.basicConfig(level=log_level)
+
     command = ns.command
 
-    debug(ns)
+    logger.debug(ns)
 
     if command == 'add':
         do_add(ns)
@@ -98,8 +84,7 @@ def do_add(ns):
 
     config_set('{}.{}.url'.format(GIT_CONFIG_SECTION, name), url)
 
-    if ns.verbose:
-        debug('{} is added with URL {}'.format(name, url))
+    logger.debug('%s is added with URL %s'.format(name, url))
 
 
 def do_remove(ns):
@@ -110,8 +95,7 @@ def do_remove(ns):
 
     config_remove_section('{}.{}'.format(GIT_CONFIG_SECTION, name))
 
-    if ns.verbose:
-        debug('{} is removed'.format(name))
+    logger.info('%s is removed'.format(name))
 
 
 def do_list(ns):
@@ -180,9 +164,8 @@ def do_transfer(ns):
             rsync_cmds.append('--include=' + item)
 
         rsync_cmds.append('--exclude=*')
-        print(pathspec)
     else:
-        debug('Rsync the file in the directory {}'.format(prefix))
+        prefix = ''
 
     path = os.path.join(url, prefix)
 
@@ -191,11 +174,13 @@ def do_transfer(ns):
     else:
         direction = (path, '.')
 
+    logger.info('Transfer files from %s to %s', *direction)
+
     rsync_cmds.extend(direction)
 
-    if ns.verbose:
-        debug('command={}\nremotepath={}'.format(command, path))
-        debug('rsync={}'.format(rsync_cmds))
+    logger.debug('command=%s,remotepath=%s', command, path)
+    logger.debug('rsync=%s', rsync_cmds)
+    logger.debug('cwd=%s', cwd)
 
     subprocess.run(rsync_cmds)
 
