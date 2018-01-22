@@ -1,5 +1,14 @@
+# Build files
+/build/
+/dist/
+
+
 # Temporary files
 *.sw[a-p]
 
 # Cache files
 *.py[co]
+
+# IDE files
+/.idea/
+
