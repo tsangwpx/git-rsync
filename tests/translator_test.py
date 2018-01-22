@@ -1,13 +1,11 @@
 import logging
 import unittest
 
-from gitrsync.pathspec import PathSpec
-from gitrsync.translator import Translator, logger as t_logger
-
 
 class TranslatorTest(unittest.TestCase):
-    def setUp(self):
-        t_logger.setLevel(logging.DEBUG)
+    @classmethod
+    def setUpClass(cls):
+        logging.basicConfig(level=logging.DEBUG)
 
     def test_dot(self):
         """
@@ -120,7 +118,110 @@ class TranslatorTest(unittest.TestCase):
             ('- README.md/***', '- README.md', '+ subsubdir/***', '- *'),
         )
 
+    @unittest.skip("not implemented")
+    def test_glob(self):
+        self._testTranslator(
+            '',
+            (':(glob)*.py',),
+            '',
+            ('+ /*.py', '- *'),
+        )
+
+    @unittest.skip("not implemented")
+    def test_glob2(self):
+        self._testTranslator(
+            '',
+            (':(glob)subdir',),
+            'subdir',
+            ('+ ***', '- *'),
+        )
+
+    @unittest.skip("not implemented")
+    def test_glob3(self):
+        self._testTranslator(
+            '',
+            (':(glob)subdir*',),
+            '',
+            ('+ subdir*', '- *',)
+        )
+
+    @unittest.skip("not implemented")
+    def test_glob3v2(self):
+        self._testTranslator(
+            '',
+            (':(glob)subdir*/',),
+            '',
+            ('+ subdir*/', '- *'),
+        )
+
+    @unittest.skip("not implemented")
+    def test_glob4(self):
+        self._testTranslator(
+            '',
+            (':(glob)subdir*/*',),
+            '',
+            ('+ subdir*/*', '- *'),
+        )
+
+    def test_top_file(self):
+        """
+        Select a file from the repo root
+        """
+        self._testTranslator(
+            'subdir',
+            (':/subdir2/file',),
+            'subdir2',
+            ('+ file/***', '+ file', '- *'),
+        )
+
+    def test_top_dir(self):
+        """
+        Select sibling directory of the current directory
+        """
+        self._testTranslator(
+            'subdir',
+            (':/subdir2/',),
+            'subdir2',
+            ('+ ***', '- *'),
+        )
+
+    def test_top2(self):
+        """
+        Exclude a sibling directory of the current directory
+        """
+        self._testTranslator(
+            'subdir',
+            (':!/subdir',),
+            '',
+            ('- subdir/***', '- subdir', '+ ***'),
+        )
+
+    def test_top3(self):
+        """
+        Mixing including and excluding
+        """
+        self._testTranslator(
+            'subdir',
+            (':!/subdir', 'subsubdir'),
+            '',
+            ('- subdir/***', '- subdir', '+ subdir/', '+ subdir/subsubdir/***', '+ subdir/subsubdir', '- *'),
+        )
+
+    def test_top3v2(self):
+        """
+        Mixing including and excluding with tailing slash
+        """
+        self._testTranslator(
+            'subdir',
+            (':!/subdir/', 'subsubdir'),
+            'subdir',
+            ('- ***', '+ subsubdir/***', '+ subsubdir', '- *'),
+        )
+
     def _testTranslator(self, prefix, pathspec, common_prefix, filters):
+        from gitrsync.pathspec import PathSpec
+        from gitrsync.translator import Translator
+
         ps = PathSpec.parse(pathspec)
         translator = Translator(prefix, ps)
         translator.translate()
