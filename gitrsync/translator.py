@@ -8,7 +8,6 @@ from .pathspec import PathSpecMagic
 logger = logging.getLogger(__name__)
 
 UNSUPPORTED_MAGIC = PathSpecMagic.ATTR \
-                    | PathSpecMagic.TOP \
                     | PathSpecMagic.LITERAL \
                     | PathSpecMagic.GLOB \
                     | PathSpecMagic.ICASE
@@ -19,7 +18,7 @@ class Rule:
         self.magic = magic
         self.pattern = pattern
         self.parts = PurePosixPath(pattern).parts
-        self.trailing_slash = pattern[-1] in '/\\'
+        self.trailing_slash = pattern and pattern[-1] in '/\\'
         self.includes = None
         self.excludes = None
 
@@ -65,18 +64,31 @@ class Translator:
     def _translate(self):
         logger.debug('prefix=%s, parts=%s', self.prefix, self.prefix_parts)
 
-        self.rules = list(Rule(magic, pattern) for magic, pattern in self.pathspec.rules)
+        self.rules = tuple(Rule(magic, pattern) for magic, pattern in self.pathspec.rules)
         self._all_excludes = all(PathSpecMagic.EXCLUDE in rule.magic for rule in self.rules)
+
+        if self._all_excludes:
+            # Add rule to match everything else
+
+            if any(PathSpecMagic.TOP in rule.magic for rule in self.rules):
+                everything = Rule(PathSpecMagic.TOP, '')
+            else:
+                everything = Rule(PathSpecMagic.TOP, '/'.join(self.prefix_parts))
+
+            self.rules = tuple(itertools.chain(self.rules, [everything]))
 
         # Normalize and convert rule pattern into parts
         for rule in self.rules:
             bad_magic = UNSUPPORTED_MAGIC & rule.magic
 
             if bad_magic:
-                raise ValueError('{} is not suported'.format(bad_magic))
+                raise ValueError('{} is not supported'.format(bad_magic))
+
+            if PathSpecMagic.TOP not in rule.magic:
+                rule.parts = self._absolutize_parts(rule.parts)
 
             try:
-                rule.parts = self._abs_parts(rule.parts)
+                rule.parts = self._normalize_parts(rule.parts)
             except ValueError as e:
                 raise ValueError('Illegal pathspec {}'.format(rule.pattern)) from e
 
@@ -125,21 +137,26 @@ class Translator:
 
         self._translated = True
 
-    def _abs_parts(self, parts):
-        abs_parts = list(self.prefix_parts)
+    def _normalize_parts(self, parts):
+        normalized = []
 
         for part in parts:
             if part == '..':
-                if not abs_parts:
+                if not normalized:
                     raise ValueError('Out of repository')
-                abs_parts.pop()
+                normalized.pop()
+            elif part == '' or part == '.':
+                continue
             else:
-                abs_parts.append(part)
+                normalized.append(part)
 
-        return tuple(abs_parts)
+        return tuple(normalized)
+
+    def _absolutize_parts(self, parts):
+        return tuple(itertools.chain(self.prefix_parts, parts))
 
     def _find_common_parts(self):
-        common_parts = self.prefix_parts if self._all_excludes else None
+        common_parts = None
 
         for rule in self.rules:
             parts = rule.parts if rule.trailing_slash else rule.parts[:-1]
@@ -168,17 +185,12 @@ class Translator:
         self.translate()
 
         if self._filters is None:
-            self._translate()
-
             iterables = [
                 map(lambda s: '- ' + s, itertools.chain.from_iterable(rule.excludes for rule in self.rules)),
                 map(lambda s: '+ ' + s, itertools.chain.from_iterable(rule.includes for rule in self.rules)),
             ]
 
-            if self._all_excludes:
-                # Include everything only if all rule are with exclude magic
-                iterables.append(('+ ***',))
-            else:
+            if not self._all_excludes:
                 # Exclude everything else
                 iterables.append(('- *',))
 
