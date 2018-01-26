@@ -147,6 +147,8 @@ class Translator:
                 normalized.pop()
             elif part == '' or part == '.':
                 continue
+            elif '**' in part and part != '**':
+                raise ValueError('Invalid use of consecutive stars')
             else:
                 normalized.append(part)
 
