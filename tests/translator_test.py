@@ -63,6 +63,35 @@ class TranslatorTest(unittest.TestCase):
             ('+ **.py/***', '+ **.py', '- *')
         )
 
+    def test_backslash(self):
+        """
+        Use of backslash
+        :return:
+        """
+        self._testTranslator(
+            '',
+            ('\\*.py', '\\?\\**.html',),
+            '',
+            ('+ \\*.py/***', '+ \\*.py', '+ \\?\\***.html/***', '+ \\?\\***.html', '- *')
+        )
+
+    @unittest.expectedFailure
+    def test_invalid_stars(self):
+        try:
+            self._testTranslator(
+                '',
+                ('x**.py',),
+                '',
+                ('+ x**.py',)
+            )
+        except ValueError as e:
+            msg = str(e)
+
+            if 'pathspec' in msg:
+                self.fail(e)
+            else:
+                print(e)
+
     def test_prefix(self):
         """
         Pathspec with common prefix

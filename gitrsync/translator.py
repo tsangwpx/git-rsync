@@ -1,6 +1,7 @@
 import itertools
 import logging
 import operator
+import re
 from pathlib import PurePosixPath
 
 from .pathspec import PathSpecMagic
@@ -119,7 +120,7 @@ class Translator:
             rsync_parts = rule.parts
 
             if PathSpecMagic.GLOB not in rule.magic:
-                rsync_parts = tuple(s.replace('*', '**') for s in rule.parts)
+                rsync_parts = tuple(self._translate_part_normally(s) for s in rule.parts)
 
             # First, handle the directory prefix
             slashed_parts = map(lambda s: s + '/', rsync_parts[:-1])
@@ -145,11 +146,13 @@ class Translator:
                 if not normalized:
                     raise ValueError('Out of repository')
                 normalized.pop()
+                continue
             elif part == '' or part == '.':
                 continue
-            elif '**' in part and part != '**':
-                raise ValueError('Invalid use of consecutive stars')
             else:
+                # Replace escaped character with something dummy
+                if '**' in part and '**' in re.sub(r'\\.', r'x', part):
+                    raise ValueError('Invalid use of consecutive stars')
                 normalized.append(part)
 
         return tuple(normalized)
@@ -181,6 +184,19 @@ class Translator:
                     common_parts = common_parts[:idx + 1]
 
         return common_parts if common_parts else []
+
+    def _translate_part_normally(self, part):
+        """
+        Convert a segment in normal style to rsync styles
+
+        The wildcard star match everything including slashes
+        Note that question mark cannot match a slash due to technical limitation
+        """
+        if part == '**':
+            return part
+
+        # Replace single star with double stars except stars being prefixed with backslash
+        return re.sub(r'(?:(\*)|(\\.))', lambda m: '**' if m.group(1) else m.group(2), part)
 
     @property
     def filters(self):
