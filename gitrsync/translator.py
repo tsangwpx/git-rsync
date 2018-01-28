@@ -9,8 +9,6 @@ from .pathspec import PathSpecMagic
 logger = logging.getLogger(__name__)
 
 UNSUPPORTED_MAGIC = PathSpecMagic.ATTR \
-                    | PathSpecMagic.LITERAL \
-                    | PathSpecMagic.GLOB \
                     | PathSpecMagic.ICASE
 
 
@@ -50,7 +48,7 @@ class Translator:
     def __init__(self, prefix, ps):
         self._translated = False
         self._filters = None
-        self.rules = None
+        self._rules = None
         self.prefix = prefix
         self.prefix_parts = PurePosixPath(prefix).parts
         self.pathspec = ps
@@ -65,21 +63,21 @@ class Translator:
     def _translate(self):
         logger.debug('prefix=%s, parts=%s', self.prefix, self.prefix_parts)
 
-        self.rules = tuple(Rule(magic, pattern) for magic, pattern in self.pathspec.rules)
-        self._all_excludes = all(PathSpecMagic.EXCLUDE in rule.magic for rule in self.rules)
+        self._rules = tuple(Rule(magic, pattern) for magic, pattern in self.pathspec.rules)
+        self._all_excludes = all(PathSpecMagic.EXCLUDE in rule.magic for rule in self._rules)
 
         if self._all_excludes:
             # Add rule to match everything else
 
-            if any(PathSpecMagic.TOP in rule.magic for rule in self.rules):
+            if any(PathSpecMagic.TOP in rule.magic for rule in self._rules):
                 everything = Rule(PathSpecMagic.TOP, '')
             else:
                 everything = Rule(PathSpecMagic.TOP, '/'.join(self.prefix_parts))
 
-            self.rules = tuple(itertools.chain(self.rules, [everything]))
+            self._rules = tuple(itertools.chain(self._rules, [everything]))
 
         # Normalize and convert rule pattern into parts
-        for rule in self.rules:
+        for rule in self._rules:
             bad_magic = UNSUPPORTED_MAGIC & rule.magic
 
             if bad_magic:
@@ -100,7 +98,7 @@ class Translator:
         logger.debug('Common parts: %s', self.common_parts)
 
         # In this loop, include and exclude filters of each rule are created respectively
-        for rule in self.rules:
+        for rule in self._rules:
             # Remove common parts
             rule.parts = rule.parts[common_length:]
 
@@ -119,8 +117,15 @@ class Translator:
 
             rsync_parts = rule.parts
 
-            if PathSpecMagic.GLOB not in rule.magic:
+            if PathSpecMagic.LITERAL in rule.magic:
+                rsync_parts = self._escape_parts(rsync_parts)
+            elif PathSpecMagic.GLOB in rule.magic:
+                # Pass-through if glob in magic
+                pass
+            else:
                 rsync_parts = tuple(self._translate_part_normally(s) for s in rule.parts)
+
+            logger.debug('Parts: %s', rsync_parts)
 
             # First, handle the directory prefix
             slashed_parts = map(lambda s: s + '/', rsync_parts[:-1])
@@ -161,11 +166,15 @@ class Translator:
         return tuple(itertools.chain(self.prefix_parts, parts))
 
     def _find_common_parts(self):
+        """
+        Find the most common prefix parts of all rules
+        """
         common_parts = None
 
-        for rule in self.rules:
+        for rule in self._rules:
             parts = rule.parts if rule.trailing_slash else rule.parts[:-1]
 
+            # Extract the prefix without uncertainty
             if PathSpecMagic.LITERAL in rule.magic:
                 simple_parts = parts
             else:
@@ -198,14 +207,19 @@ class Translator:
         # Replace single star with double stars except stars being prefixed with backslash
         return re.sub(r'(?:(\*)|(\\.))', lambda m: '**' if m.group(1) else m.group(2), part)
 
+    def _escape_parts(self, parts):
+        if any(ch in '*?[' for part in parts for ch in part):
+            return tuple(re.sub(r'(\*|\?|\[|\\)', r'\\\1', part) for part in parts)
+        return parts
+
     @property
     def filters(self):
         self.translate()
 
         if self._filters is None:
             iterables = [
-                map(lambda s: '- ' + s, itertools.chain.from_iterable(rule.excludes for rule in self.rules)),
-                map(lambda s: '+ ' + s, itertools.chain.from_iterable(rule.includes for rule in self.rules)),
+                map(lambda s: '- ' + s, itertools.chain.from_iterable(rule.excludes for rule in self._rules)),
+                map(lambda s: '+ ' + s, itertools.chain.from_iterable(rule.includes for rule in self._rules)),
             ]
 
             if not self._all_excludes:

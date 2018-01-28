@@ -147,49 +147,49 @@ class TranslatorTest(unittest.TestCase):
             ('- README.md/***', '- README.md', '+ subsubdir/***', '- *'),
         )
 
-    @unittest.skip("not implemented")
     def test_glob(self):
+        """
+        Glob magic in git-rsync is a bit different from pathspec in git
+        Glob magic can match directory in git-rsync while, in git, there are only files can be matched against
+        :return:
+        """
         self._testTranslator(
             '',
             (':(glob)*.py',),
             '',
-            ('+ /*.py', '- *'),
+            ('+ *.py/***', '+ *.py', '- *'),
         )
 
-    @unittest.skip("not implemented")
     def test_glob2(self):
         self._testTranslator(
             '',
             (':(glob)subdir',),
-            'subdir',
-            ('+ ***', '- *'),
+            '',
+            ('+ subdir/***', '+ subdir', '- *'),
         )
 
-    @unittest.skip("not implemented")
     def test_glob3(self):
         self._testTranslator(
             '',
             (':(glob)subdir*',),
             '',
-            ('+ subdir*', '- *',)
+            ('+ subdir*/***', '+ subdir*', '- *',)
         )
 
-    @unittest.skip("not implemented")
     def test_glob3v2(self):
         self._testTranslator(
             '',
             (':(glob)subdir*/',),
             '',
-            ('+ subdir*/', '- *'),
+            ('+ subdir*/***', '- *'),
         )
 
-    @unittest.skip("not implemented")
     def test_glob4(self):
         self._testTranslator(
             '',
             (':(glob)subdir*/*',),
             '',
-            ('+ subdir*/*', '- *'),
+            ('+ subdir*/', '+ subdir*/*/***', '+ subdir*/*', '- *'),
         )
 
     def test_top_file(self):
@@ -234,6 +234,34 @@ class TranslatorTest(unittest.TestCase):
             (':!/subdir', 'subsubdir'),
             '',
             ('- subdir/***', '- subdir', '+ subdir/', '+ subdir/subsubdir/***', '+ subdir/subsubdir', '- *'),
+        )
+
+    def test_literal(self):
+        self._testTranslator(
+            '',
+            (':(literal)something*',),
+            '',
+            ('+ something\\*/***', '+ something\\*', '- *')
+        )
+
+    def test_literal2(self):
+        self._testTranslator(
+            '',
+            (':(literal)[Ss]omething/*zxc*',),
+            '[Ss]omething',
+            ('+ \\*zxc\\*/***', '+ \\*zxc\\*', '- *')
+        )
+
+    def test_literal3(self):
+        self._testTranslator(
+            '',
+            (':(literal)[Ss]omething/*zxc*', '[Ss]omething/\\*zxc\\*'),
+            '',
+            (
+                '+ \\[Ss]omething/', '+ \\[Ss]omething/\\*zxc\\*/***', '+ \\[Ss]omething/\\*zxc\\*',
+                '+ [Ss]omething/', '+ [Ss]omething/\\*zxc\\*/***', '+ [Ss]omething/\\*zxc\\*',
+                '- *'
+            )
         )
 
     def test_top3v2(self):
