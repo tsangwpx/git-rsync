@@ -180,7 +180,7 @@ def do_transfer(ns):
     if command == 'upload':
         direction = ('.', path)
     else:
-        direction = (path, '.')
+        direction = (path + '/' if path else './', '.')
 
     logger.info('Transfer files from %s to %s', *direction)
 
