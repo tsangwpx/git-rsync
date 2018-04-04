@@ -11,5 +11,11 @@
 *.py[co]
 
 # IDE files
-/.idea/
+.idea/
+.vscode/
+
+# Venv environments
+venv/
+venv.*/
+
 
