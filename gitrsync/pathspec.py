@@ -1,11 +1,13 @@
-import collections
-import enum
 import logging
+
+import collections
+
+from .compat import IntFlag
 
 logger = logging.getLogger(__name__)
 
 
-class PathSpecMagic(enum.IntFlag):
+class PathSpecMagic(IntFlag):
     """
     Magic signature
 
