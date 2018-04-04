@@ -90,11 +90,13 @@ class Configuration(BaseConfiguration):
 
         args.extend(('--get', key))
 
-        code, output = _run_command(args)
-        if code != 0:
+        try:
+            output = _run_command(args)
+            return self._cast_type(output, get_bool, get_int)
+        except subprocess.CalledProcessError as error:
+            if error.returncode == 1:
             return default
-
-        return self._cast_type(output, get_bool, get_int)
+            raise
 
     def get_regexp(self, pattern, get_bool=False, get_int=False):
         args = self._build_args_prefix()
