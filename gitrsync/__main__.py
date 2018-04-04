@@ -193,8 +193,7 @@ def do_transfer(ns):
     logger.debug('rsync=%s', rsync_cmds)
     logger.debug('cwd=%s', cwd)
 
-    subprocess.run(rsync_cmds, cwd=os.path.join(toplevel, prefix), input=rsync_input, encoding='UTF-8',
-                   universal_newlines=True)
+    subprocess.run(rsync_cmds, cwd=os.path.join(toplevel, prefix), input=rsync_input, universal_newlines=True)
 
 
 def git_rev_parse(command):
@@ -203,7 +202,7 @@ def git_rev_parse(command):
             GIT_BIN,
             'rev-parse',
             '--' + command
-        ], universal_newlines=True, encoding='UTF-8').rstrip('\r\n')
+        ], universal_newlines=True).rstrip('\r\n')
     else:
         raise ValueError('Unknown command {}'.format(command))
 
@@ -214,7 +213,7 @@ def config_get(key, default=None):
         'config',
         '--get',
         key,
-    ], stdout=subprocess.PIPE, universal_newlines=True, encoding='UTF-8')
+    ], stdout=subprocess.PIPE, universal_newlines=True)
 
     if process.returncode == 1:
         return default
@@ -231,7 +230,7 @@ def config_get_regexp(regexp):
         'config',
         '--get-regexp',
         regexp
-    ], stdout=subprocess.PIPE, universal_newlines=True, encoding='UTF-8')
+    ], stdout=subprocess.PIPE, universal_newlines=True)
 
     if process.returncode == 1:
         return []
