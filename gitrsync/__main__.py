@@ -89,7 +89,7 @@ def do_add(ns):
 
     config_set('{}.{}.url'.format(GIT_CONFIG_SECTION, name), url)
 
-    logger.debug('%s is added with URL %s'.format(name, url))
+    logger.debug('%s is added with URL%s', name, url)
 
 
 def do_remove(ns):
@@ -100,7 +100,7 @@ def do_remove(ns):
 
     config_remove_section('{}.{}'.format(GIT_CONFIG_SECTION, name))
 
-    logger.info('%s is removed'.format(name))
+    logger.info('%s is removed', name)
 
 
 def do_list(ns):
