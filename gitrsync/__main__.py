@@ -106,25 +106,26 @@ def do_remove(ns):
 def do_list(ns):
     import re
 
-    pattern = "{}\\.(.+)\\.url".format(GIT_CONFIG_SECTION)
-    data = config_get_regexp(pattern)
+    config = gitutils.Configuration()
 
-    name_length = 0
-    urls = []
+    pattern = r'%s\.(.+)\.url' % (GIT_CONFIG_SECTION,)
+    data = config.get_regexp(pattern)
+
+    urls = OrderedDict()
 
     for key, url in data:
         match = re.match(pattern, key)
 
         if match:
-            name = match.group(1)
-            name_length = max(name_length, len(name))
-            urls.append((name, url))
+            host = match.group(1)
+            urls[host] = url
 
-    if name_length > 20:
-        name_length = 20
+    if urls:
+        column_length = max(len(s) for s in urls.keys())
 
-    fmt = "{: <" + str(name_length) + "}  {}"
-    for name, url in urls:
+        fmt = r'{: <%d} {}' % column_length
+
+        for name, url in urls.items():
         print(fmt.format(name, url))
 
 
