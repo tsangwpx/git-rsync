@@ -1,6 +1,6 @@
 import argparse
 import logging
-import os.path
+import os
 import subprocess
 
 logger = logging.getLogger(__name__)
@@ -237,7 +237,7 @@ def config_get_regexp(regexp):
     elif process.returncode:
         raise RuntimeError('Unknown return code {}'.format(process.returncode))
 
-    return list(re.split('\s+', s, 2) for s in process.stdout.splitlines() if s)
+    return list(re.split(r'\s+', s, 2) for s in process.stdout.splitlines() if s)
 
 
 def config_set(key, value):
