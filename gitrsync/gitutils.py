@@ -45,7 +45,9 @@ def rev_parse(options):
 
     args.extend(options)
 
-    return _run_command(args).splitlines()
+    output = _run_command(args, remove_trailing_newline=False)
+
+    return output.splitlines()
 
 
 def git_dir():
