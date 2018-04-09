@@ -3,6 +3,7 @@ import logging
 import os
 import subprocess
 
+from .gitutils import rev_parse
 logger = logging.getLogger(__name__)
 
 PROGRAM_NAME = 'git rsync'
@@ -161,7 +162,7 @@ def do_transfer(ns):
         rsync_cmds.append('--exclude=.git/')
 
     if pathspec:
-        prefix = git_rev_parse('show-prefix')
+        prefix = rev_parse(('show-prefix',))[0]
 
         ps = PathSpec.parse(pathspec)
         translator = Translator(prefix, ps)
@@ -187,7 +188,7 @@ def do_transfer(ns):
 
     rsync_cmds.extend(direction)
 
-    toplevel = git_rev_parse('show-toplevel')
+    toplevel = rev_parse(('show-toplevel',))[0]
     cwd = os.path.join(toplevel, prefix)
 
     logger.debug('command=%s,remotepath=%s', command, path)
@@ -195,17 +196,6 @@ def do_transfer(ns):
     logger.debug('cwd=%s', cwd)
 
     subprocess.run(rsync_cmds, cwd=os.path.join(toplevel, prefix), input=rsync_input, universal_newlines=True)
-
-
-def git_rev_parse(command):
-    if command in ('show-toplevel', 'show-cdup', 'show-prefix'):
-        return subprocess.check_output([
-            GIT_BIN,
-            'rev-parse',
-            '--' + command
-        ], universal_newlines=True).rstrip('\r\n')
-    else:
-        raise ValueError('Unknown command {}'.format(command))
 
 
 def config_get(key, default=None):

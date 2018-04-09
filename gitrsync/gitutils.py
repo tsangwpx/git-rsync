@@ -16,6 +16,17 @@ def _run_command(*args, **kwargs):
     return subprocess.check_output(*args, **kwargs).rstrip('\r\n')
 
 
+def rev_parse(options):
+    args = [
+            GIT_BIN,
+            'rev-parse',
+    ]
+
+    args.extend(options)
+
+    return _run_command(args).splitlines()
+
+
 def git_dir():
     args = [
         GIT_BIN,
