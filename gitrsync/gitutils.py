@@ -48,6 +48,18 @@ class BaseConfiguration:
     def get_regexp(self, key, get_bool=False, get_int=False):
         raise NotImplementedError()
 
+    def get_all(self, key, get_bool=False, get_int=False):
+        return NotImplementedError()
+
+    def unset(self, key):
+        raise NotImplementedError()
+
+    def unset_all(self, key):
+        raise NotImplementedError()
+
+    def remove_section(self, name):
+        raise NotImplementedError()
+
     @staticmethod
     def _cast_type(output, get_bool, get_int):
         if get_bool or get_int:
@@ -111,3 +123,93 @@ class Configuration(BaseConfiguration):
             if err.returncode == 1:
                 return []
             raise
+
+    def get_all(self, key, get_bool=False, get_int=False):
+        args = self._build_args_prefix()
+        args = self._build_args_type(args, get_bool, get_int)
+
+        args.extend(('--get-all', key))
+
+        try:
+            output = _run_command(args)
+            return output.splitlines()
+        except subprocess.CalledProcessError as err:
+            if err.returncode == 1:
+                return []
+            raise
+
+    def unset(self, key):
+        args = self._build_args_prefix()
+        args.extend(('--unset', key))
+
+        try:
+            _run_command(args)
+            return True
+        except subprocess.ChildProcessError as err:
+            if err.returncode == 5:
+                return False
+            raise
+
+    def unset_all(self, key):
+        args = self._build_args_prefix()
+        args.extend(('--unset-all', key))
+
+        try:
+            _run_command(args)
+            return True
+        except subprocess.CalledProcessError as err:
+            if err.returncode == 5:
+                return False
+            raise
+            raise
+
+    def get_all(self, key, get_bool=False, get_int=False):
+        args = self._build_args_prefix()
+        args = self._build_args_type(args, get_bool, get_int)
+
+        args.extend(('--get-all', key))
+
+        try:
+            output = _run_command(args)
+            return output.splitlines()
+        except subprocess.CalledProcessError as err:
+            if err.returncode == 1:
+                return []
+            raise
+
+    def unset(self, key):
+        args = self._build_args_prefix()
+        args.extend(('--unset', key))
+
+        try:
+            _run_command(args)
+            return True
+        except subprocess.ChildProcessError as err:
+            if err.returncode == 5:
+                return False
+            raise
+
+    def unset_all(self, key):
+        args = self._build_args_prefix()
+        args.extend(('--unset-all', key))
+
+        try:
+            _run_command(args)
+            return True
+        except subprocess.CalledProcessError as err:
+            if err.returncode == 5:
+                return False
+            raise
+
+    def remove_section(self, name):
+        args = self._build_args_prefix()
+        args.extend(('--remove-section', name))
+
+        try:
+            _run_command(args)
+            return True
+        except subprocess.CalledProcessError as err:
+            if err.returncode == 1:
+                return False
+            raise
+
