@@ -25,13 +25,16 @@ def to_bool(value):
         raise TypeError('Unknown type %s' % (type(value),))
 
 
-def _run_command(*args, **kwargs):
+def _run_command(*args, remove_trailing_newline=True, **kwargs):
     if 'universal_newlines' not in kwargs:
         kwargs['universal_newlines'] = True
 
     logger.debug('Executing %s', args[0])
 
-    return subprocess.check_output(*args, **kwargs).rstrip('\r\n')
+    output = subprocess.check_output(*args, **kwargs)
+    if remove_trailing_newline and output and output[-1] == '\n':
+        return output[:-1]
+    return output
 
 
 def rev_parse(options):
