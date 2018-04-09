@@ -81,6 +81,9 @@ class BaseConfiguration:
     def get_all(self, key, get_bool=False, get_int=False):
         return NotImplementedError()
 
+    def put(self, key, value):
+        return NotImplementedError()
+
     def unset(self, key):
         raise NotImplementedError()
 
@@ -168,6 +171,12 @@ class Configuration(BaseConfiguration):
                 return []
             raise
 
+    def put(self, key, value):
+        args = self._build_args_prefix()
+        args.extend((key, value))
+
+        _run_command(args)
+
     def unset(self, key):
         args = self._build_args_prefix()
         args.extend(('--unset', key))
@@ -228,3 +237,6 @@ class ChainConfiguration(BaseConfiguration):
     def get_regexp(self, key, get_bool=False, get_int=False):
         iterables = (conf.get_regexp(key, get_bool=get_bool, get_int=get_int) for conf in reversed(self.configs))
         return itertools.chain.from_iterable(iterables)
+
+    def put(self, key, value):
+        return self.configs[0].put(key, value)
