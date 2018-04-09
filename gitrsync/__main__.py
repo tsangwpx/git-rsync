@@ -4,13 +4,22 @@ import os
 import subprocess
 from collections import OrderedDict
 
-from .gitutils import rev_parse
+from .utils import cached_result
+from .gitutils import rev_parse, Configuration
+
 logger = logging.getLogger(__name__)
 
 PROGRAM_NAME = 'git rsync'
 GIT_BIN = '/usr/bin/git'
 GIT_CONFIG_SECTION = 'rsync'
 RSYNC_BIN = '/usr/bin/rsync'
+
+
+@cached_result
+def get_config():
+    config = Configuration()
+
+    return config
 
 
 def create_parser():
@@ -89,9 +98,10 @@ def do_add(ns):
     if not url:
         raise RuntimeError('No URL is specified')
 
-    config_set('{}.{}.url'.format(GIT_CONFIG_SECTION, name), url)
+    logger.debug('Add host %s with URL %s', ns.name, ns.url)
 
-    logger.debug('%s is added with URL%s', name, url)
+    config = get_config()
+    config.put('%s.%s.url' % (GIT_CONFIG_SECTION, name), url)
 
 
 def do_remove(ns):
@@ -100,15 +110,16 @@ def do_remove(ns):
     if not name:
         raise ValueError('No name is specified')
 
-    config_remove_section('{}.{}'.format(GIT_CONFIG_SECTION, name))
+    logger.debug('Remove host %', ns.name)
 
-    logger.info('%s is removed', name)
+    config = get_config()
+    config.remove_section('%s.%s' % (GIT_CONFIG_SECTION, name))
 
 
 def do_list(ns):
     import re
 
-    config = gitutils.Configuration()
+    config = get_config()
 
     pattern = r'%s\.(.+)\.url' % (GIT_CONFIG_SECTION,)
     data = config.get_regexp(pattern)
@@ -142,7 +153,8 @@ def do_transfer(ns):
 
     assert command in ('upload', 'download')
 
-    url = config_get('{}.{}.url'.format(GIT_CONFIG_SECTION, name))
+    config = get_config()
+    url = config.get('%s.%s.url' % (GIT_CONFIG_SECTION, name))
 
     if not url:
         raise RuntimeError('Unknown remote name {}'.format(name))
@@ -197,57 +209,6 @@ def do_transfer(ns):
     logger.debug('cwd=%s', cwd)
 
     subprocess.run(rsync_cmds, cwd=os.path.join(toplevel, prefix), input=rsync_input, universal_newlines=True)
-
-
-def config_get(key, default=None):
-    process = subprocess.run([
-        GIT_BIN,
-        'config',
-        '--get',
-        key,
-    ], stdout=subprocess.PIPE, universal_newlines=True)
-
-    if process.returncode == 1:
-        return default
-    elif process.returncode:
-        raise RuntimeError('Unknown return code {}'.format(process.returncode))
-
-    return process.stdout.rstrip('\r\n')
-
-
-def config_get_regexp(regexp):
-    import re
-    process = subprocess.run([
-        GIT_BIN,
-        'config',
-        '--get-regexp',
-        regexp
-    ], stdout=subprocess.PIPE, universal_newlines=True)
-
-    if process.returncode == 1:
-        return []
-    elif process.returncode:
-        raise RuntimeError('Unknown return code {}'.format(process.returncode))
-
-    return list(re.split(r'\s+', s, 2) for s in process.stdout.splitlines() if s)
-
-
-def config_set(key, value):
-    subprocess.check_call([
-        GIT_BIN,
-        'config',
-        key,
-        value
-    ])
-
-
-def config_remove_section(key):
-    subprocess.check_call([
-        GIT_BIN,
-        'config',
-        '--remove-section',
-        key
-    ])
 
 
 if __name__ == '__main__':
