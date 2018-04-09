@@ -106,8 +106,8 @@ class Configuration(BaseConfiguration):
 
         try:
             output = _run_command(args)
-            return (line.split(maxsplit=2) for line in output.splitlines())
+            return list(line.split(maxsplit=2) for line in output.splitlines())
         except subprocess.CalledProcessError as err:
             if err.returncode == 1:
-                return iter(())
+                return []
             raise
