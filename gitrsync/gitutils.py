@@ -219,7 +219,10 @@ class ChainConfiguration(BaseConfiguration):
     Chained configuration
 
     """
+
     def __init__(self, configs):
+        configs = list(configs)
+
         if not configs or any(not isinstance(conf, BaseConfiguration) for conf in configs):
             raise TypeError()
 
