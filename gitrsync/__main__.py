@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import subprocess
+from collections import OrderedDict
 
 from .gitutils import rev_parse
 logger = logging.getLogger(__name__)
