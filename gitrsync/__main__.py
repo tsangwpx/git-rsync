@@ -34,7 +34,7 @@ def get_repo_info():
 
     repo_info.git_dir = results[0]
     repo_info.git_common_dir = results[1]
-    repo_info.top_level = results[2]
+    repo_info.toplevel = results[2]
     repo_info.prefix = results[3]
 
     return repo_info
@@ -196,6 +196,8 @@ def do_transfer(ns):
     if not url:
         raise RuntimeError('Unknown remote name {}'.format(name))
 
+    repo_info = get_repo_info()
+
     rsync_cmds = [
         RSYNC_BIN,
         '-azP',
@@ -212,7 +214,7 @@ def do_transfer(ns):
         rsync_cmds.append('--exclude=.git/')
 
     if pathspec:
-        prefix = rev_parse(('--show-prefix',))[0]
+        prefix = repo_info.prefix
 
         ps = PathSpec.parse(pathspec)
         translator = Translator(prefix, ps)
@@ -238,7 +240,7 @@ def do_transfer(ns):
 
     rsync_cmds.extend(direction)
 
-    toplevel = rev_parse(('--show-toplevel',))[0]
+    toplevel = repo_info.toplevel
     cwd = os.path.join(toplevel, prefix)
 
     logger.debug('command=%s,remotepath=%s', command, path)
