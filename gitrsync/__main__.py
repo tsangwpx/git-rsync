@@ -3,9 +3,10 @@ import logging
 import os
 import subprocess
 from collections import OrderedDict
+from types import SimpleNamespace
 
 from .utils import cached_result
-from .gitutils import rev_parse, Configuration
+from .gitutils import rev_parse, to_bool, Configuration, ChainConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +17,44 @@ RSYNC_BIN = '/usr/bin/rsync'
 
 
 @cached_result
+def get_repo_info():
+    repo_info = SimpleNamespace()
+
+    option_inside_worktree = '--is-inside-work-tree'
+
+    results = rev_parse((
+        '--git-dir',
+        '--git-common-dir',
+        '--show-toplevel',
+        '--show-prefix',
+        option_inside_worktree
+    ))
+
+    logger.debug('repo_info got %s from rev_parse()', results)
+
+    repo_info.git_dir = results[0]
+    repo_info.git_common_dir = results[1]
+    repo_info.top_level = results[2]
+    repo_info.prefix = results[3]
+
+    return repo_info
+
+
+@cached_result
 def get_config():
+    repo_info = get_repo_info()
+
     config = Configuration()
+
+    if repo_info.git_dir != repo_info.git_common_dir:
+        # GIT_DIR should point to branch root in worktrees
+        if 'worktrees' not in repo_info.git_dir:
+            raise AssertionError('unexpected path component format in GIT_DIR')
+
+        filepath = os.path.join(repo_info.git_dir, 'git-rsync')
+        top_config = Configuration(file=filepath)
+
+        config = ChainConfiguration((top_config, config))
 
     return config
 
@@ -139,7 +176,7 @@ def do_list(ns):
         fmt = r'{: <%d} {}' % column_length
 
         for name, url in urls.items():
-        print(fmt.format(name, url))
+            print(fmt.format(name, url))
 
 
 def do_transfer(ns):
