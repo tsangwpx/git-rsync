@@ -7,6 +7,24 @@ logger = logging.getLogger(__name__)
 GIT_BIN = '/usr/bin/git'
 
 
+def to_bool(value):
+    if isinstance(value, bool):
+        return value
+    elif isinstance(value, str):
+        value = value.lower()
+
+        if value in ('true', 'yes', 'on', '1'):
+            return True
+        elif value in ('false', 'no', 'off', '0', ''):
+            return False
+        else:
+            raise ValueError('Unknown conversion of str value: %s' % (value,))
+    elif isinstance(value, int):
+        return bool(value)
+    else:
+        raise TypeError('Unknown type %s' % (type(value),))
+
+
 def _run_command(*args, **kwargs):
     if 'universal_newlines' not in kwargs:
         kwargs['universal_newlines'] = True
