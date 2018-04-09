@@ -1,3 +1,4 @@
+import itertools
 import logging
 import subprocess
 
@@ -107,7 +108,7 @@ class Configuration(BaseConfiguration):
             return self._cast_type(output, get_bool, get_int)
         except subprocess.CalledProcessError as error:
             if error.returncode == 1:
-            return default
+                return default
             raise
 
     def get_regexp(self, pattern, get_bool=False, get_int=False):
@@ -161,45 +162,6 @@ class Configuration(BaseConfiguration):
             if err.returncode == 5:
                 return False
             raise
-            raise
-
-    def get_all(self, key, get_bool=False, get_int=False):
-        args = self._build_args_prefix()
-        args = self._build_args_type(args, get_bool, get_int)
-
-        args.extend(('--get-all', key))
-
-        try:
-            output = _run_command(args)
-            return output.splitlines()
-        except subprocess.CalledProcessError as err:
-            if err.returncode == 1:
-                return []
-            raise
-
-    def unset(self, key):
-        args = self._build_args_prefix()
-        args.extend(('--unset', key))
-
-        try:
-            _run_command(args)
-            return True
-        except subprocess.ChildProcessError as err:
-            if err.returncode == 5:
-                return False
-            raise
-
-    def unset_all(self, key):
-        args = self._build_args_prefix()
-        args.extend(('--unset-all', key))
-
-        try:
-            _run_command(args)
-            return True
-        except subprocess.CalledProcessError as err:
-            if err.returncode == 5:
-                return False
-            raise
 
     def remove_section(self, name):
         args = self._build_args_prefix()
@@ -213,3 +175,27 @@ class Configuration(BaseConfiguration):
                 return False
             raise
 
+
+class ChainConfiguration(BaseConfiguration):
+    """
+    Chained configuration
+
+    """
+    def __init__(self, configs):
+        if not configs or any(not isinstance(conf, BaseConfiguration) for conf in configs):
+            raise TypeError()
+
+        self.configs = configs
+
+    def get(self, key, default=None, get_bool=False, get_int=False):
+        for conf in self.configs:
+            result = conf.get(key, None, get_bool=get_bool, get_int=get_int)
+
+            if result is not None:
+                return result
+
+        return default
+
+    def get_regexp(self, key, get_bool=False, get_int=False):
+        iterables = (conf.get_regexp(key, get_bool=get_bool, get_int=get_int) for conf in reversed(self.configs))
+        return itertools.chain.from_iterable(iterables)
