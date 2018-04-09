@@ -163,7 +163,7 @@ def do_transfer(ns):
         rsync_cmds.append('--exclude=.git/')
 
     if pathspec:
-        prefix = rev_parse(('show-prefix',))[0]
+        prefix = rev_parse(('--show-prefix',))[0]
 
         ps = PathSpec.parse(pathspec)
         translator = Translator(prefix, ps)
@@ -189,7 +189,7 @@ def do_transfer(ns):
 
     rsync_cmds.extend(direction)
 
-    toplevel = rev_parse(('show-toplevel',))[0]
+    toplevel = rev_parse(('--show-toplevel',))[0]
     cwd = os.path.join(toplevel, prefix)
 
     logger.debug('command=%s,remotepath=%s', command, path)
