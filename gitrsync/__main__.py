@@ -104,6 +104,12 @@ def main():
         log_level = logging.INFO
 
     if log_level is not None:
+        # Remove existing handlers from the root logger
+        # See https://stackoverflow.com/a/13839732/1692260
+        root = logging.getLogger()
+        for handler in root.handlers[:]:
+            root.removeHandler(handler)
+
         logging.basicConfig(level=log_level)
 
     command = ns.command
