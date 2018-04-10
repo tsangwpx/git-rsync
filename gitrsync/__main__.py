@@ -30,12 +30,26 @@ def get_repo_info():
         option_inside_worktree
     ))
 
-    logger.debug('repo_info got %s from rev_parse()', results)
-
     repo_info.git_dir = results[0]
     repo_info.git_common_dir = results[1]
     repo_info.toplevel = results[2]
     repo_info.prefix = results[3]
+
+    def workaround_098aa867():
+        if not (repo_info.prefix and os.path.join(repo_info.prefix, '.git') == repo_info.git_common_dir):
+            # Seem no problem found
+            return
+
+        # GIT_COMMON_DIR may be incorrectly set inside subdirectories of the master work-tree
+        # git v2.11.0 is affected and included in Debian stretch
+        # See: https://github.com/git/git/commit/098aa867626ef2444ef14a92b428a6ca26d83e60
+        logger.debug('Applying workaround 098aa867')
+        repo_info.git_common_dir = repo_info.git_dir
+
+    workaround_098aa867()
+
+    logger.debug('repo_info(): git_dir=%s, git_common_dir=%s, toplevel=%s, prefix=%s', repo_info.git_dir,
+                 repo_info.git_common_dir, repo_info.toplevel, repo_info.prefix)
 
     return repo_info
 
