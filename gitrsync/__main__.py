@@ -31,7 +31,8 @@ def get_repo_info():
     ))
 
     repo_info.git_dir = results[0]
-    repo_info.git_common_dir = results[1]
+    # --git-common-dir is returned when git does not support it
+    repo_info.git_common_dir = results[1] if results[1] != '--git-common-dir' else results
     repo_info.toplevel = results[2]
     repo_info.prefix = results[3]
 
