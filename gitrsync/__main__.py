@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 PROGRAM_NAME = 'git rsync'
 GIT_BIN = '/usr/bin/git'
 GIT_CONFIG_SECTION = 'rsync'
-RSYNC_BIN = '/usr/bin/rsync'
+RSYNC_BIN = 'rsync'
 
 
 @cached_result

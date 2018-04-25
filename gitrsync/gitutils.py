@@ -4,7 +4,7 @@ import subprocess
 
 logger = logging.getLogger(__name__)
 
-GIT_BIN = '/usr/bin/git'
+GIT_BIN = 'git'
 
 
 def to_bool(value):
@@ -39,8 +39,8 @@ def _run_command(*args, remove_trailing_newline=True, **kwargs):
 
 def rev_parse(options):
     args = [
-            GIT_BIN,
-            'rev-parse',
+        GIT_BIN,
+        'rev-parse',
     ]
 
     args.extend(options)
