@@ -17,5 +17,5 @@
 # Venv environments
 venv/
 venv.*/
-
+venv-*/
 
