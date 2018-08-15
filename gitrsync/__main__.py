@@ -226,15 +226,20 @@ def do_transfer(ns):
 
     rsync_cmds = [
         RSYNC_BIN,
-        '-azP',
     ]
     rsync_input = None
 
-    if dry_run:
-        rsync_cmds.append('-n')
+    flags = 'azP'
 
-    if ns.verbose:
-        rsync_cmds.append('-' + 'v' * ns.verbose)
+    if dry_run:
+        flags += 'n'
+
+    rsync_verbose = max(ns.verbose - 1, 0)
+    if rsync_verbose:
+        flags += 'v' * rsync_verbose
+
+    if flags:
+        rsync_cmds.append('-' + flags)
 
     rsync_cmds.extend(ns.rsync_options)
 
