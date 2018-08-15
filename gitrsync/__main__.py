@@ -74,38 +74,36 @@ def get_config():
     return config
 
 
-def create_parser():
-    parser = argparse.ArgumentParser(prog=PROGRAM_NAME)
-    parser.add_argument('-v', '--verbose', action='count', default=0)
-    parser.add_argument('--version', action='store_true', help='Show version')
-
-    subparsers = parser.add_subparsers(dest='command')
-
-    add_parser = subparsers.add_parser('add')
-    add_parser.add_argument('name', help='remote name')
-    add_parser.add_argument('url', help='remote URL')
-
-    remove_parser = subparsers.add_parser('remove')
-    remove_parser.add_argument('name', help='remote name')
-
-    list_parser = subparsers.add_parser('list')
-
-    transfer_parser = argparse.ArgumentParser(add_help=False)
-    transfer_parser.add_argument('-v', '--verbose', action='count', default=0)
-    transfer_parser.add_argument('-n', '--dry-run', action='store_true', help='Dry run only')
-    transfer_parser.add_argument('--include-git-dir', action='store_true', default=False,
-                                 help='Include .git directory in transfer')
-    transfer_parser.add_argument('name', help='remote name')
-    transfer_parser.add_argument('pathspec', nargs='*', help='file paths in interest')
-    subparsers.add_parser('download', parents=[transfer_parser])
-    subparsers.add_parser('upload', parents=[transfer_parser])
-
-    return parser
-
-
 def parse():
-    parser = create_parser()
-    ns = parser.parse_args()
+    p = argparse.ArgumentParser(prog='git-rsync')
+    p.add_argument('-v', '--verbose', action='count', default=0)
+
+    subparsers = p.add_subparsers(dest='command')
+
+    p_version = subparsers.add_parser('version')
+
+    p_add = subparsers.add_parser('add')
+    p_add.add_argument('name', help='remote name')
+    p_add.add_argument('url', help='remote URL')
+
+    p_remove = subparsers.add_parser('remove')
+    p_remove.add_argument('name', help='remote name')
+
+    p_list = subparsers.add_parser('list')
+
+    transfer = argparse.ArgumentParser(add_help=False)
+    transfer.add_argument('-v', '--verbose', action='count', default=0)
+    transfer.add_argument('-n', '--dry-run', action='store_true',
+                          help='Dry run only')
+    transfer.add_argument('--include-git-dir', action='store_true', default=False,
+                                 help='Include .git directory in transfer')
+    transfer.add_argument('name', help='remote name')
+    transfer.add_argument('pathspec', nargs='*', help='file paths in interest')
+    p_download = subparsers.add_parser('download', parents=[transfer])
+    p_upload = subparsers.add_parser('upload', parents=[transfer])
+
+    ns = p.parse_args()
+    ns._parser = p
     return ns
 
 
