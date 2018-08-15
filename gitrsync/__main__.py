@@ -96,7 +96,7 @@ def parse():
     transfer.add_argument('-n', '--dry-run', action='store_true',
                           help='Dry run only')
     transfer.add_argument('--include-git-dir', action='store_true', default=False,
-                                 help='Include .git directory in transfer')
+                          help='Include .git directory in transfer')
     transfer.add_argument('name', help='remote name')
     transfer.add_argument('pathspec', nargs='*', help='file paths in interest')
     p_download = subparsers.add_parser('download', parents=[transfer])
@@ -125,20 +125,24 @@ def main():
 
         logging.basicConfig(level=log_level)
 
-    command = ns.command
-
     logger.debug(ns)
 
-    if ns.version:
-        do_version(ns)
-    elif command == 'add':
-        do_add(ns)
-    elif command == 'remove':
-        do_remove(ns)
-    elif command == 'list':
-        do_list(ns)
-    elif command == 'download' or command == 'upload':
-        do_transfer(ns)
+    cmd_handlers = {
+        'version': do_version,
+        'add': do_add,
+        'remove': do_remove,
+        'list': do_list,
+        'download': do_transfer,
+        'upload': do_transfer,
+    }
+
+    handler = cmd_handlers.get(ns.command, do_help)
+    handler(ns)
+
+
+def do_help(ns):
+    p = ns._parser  # type: argparse.ArgumentParser
+    p.print_help()
 
 
 def do_version(ns):
