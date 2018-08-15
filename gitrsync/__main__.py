@@ -92,11 +92,14 @@ def parse():
     p_list = subparsers.add_parser('list')
 
     transfer = argparse.ArgumentParser(add_help=False)
+    transfer.set_defaults(rsync_options=[])
     transfer.add_argument('-v', '--verbose', action='count', default=0)
     transfer.add_argument('-n', '--dry-run', action='store_true',
                           help='Dry run only')
     transfer.add_argument('--include-git-dir', action='store_true', default=False,
                           help='Include .git directory in transfer')
+    transfer.add_argument('--delete', action='append_const', const='--delete', dest='rsync_options')
+    transfer.add_argument('--inplace', action='append_const', const='--inplace', dest='rsync_options')
     transfer.add_argument('name', help='remote name')
     transfer.add_argument('pathspec', nargs='*', help='file paths in interest')
     p_download = subparsers.add_parser('download', parents=[transfer])
@@ -233,6 +236,8 @@ def do_transfer(ns):
     if ns.verbose:
         rsync_cmds.append('-' + 'v' * ns.verbose)
 
+    rsync_cmds.extend(ns.rsync_options)
+
     if not ns.include_git_dir:
         rsync_cmds.append('--exclude=.git/')
 
@@ -268,6 +273,7 @@ def do_transfer(ns):
 
     logger.debug('command=%s,remotepath=%s', command, path)
     logger.debug('rsync=%s', rsync_cmds)
+    logger.info('Execute command: %s %s', RSYNC_BIN, ' '.join(rsync_cmds))
     logger.debug('cwd=%s', cwd)
 
     subprocess.run(rsync_cmds, cwd=os.path.join(toplevel, prefix), input=rsync_input, universal_newlines=True)
