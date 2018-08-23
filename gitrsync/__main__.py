@@ -244,7 +244,7 @@ def do_transfer(ns):
     rsync_cmds.extend(ns.rsync_options)
 
     if not ns.include_git_dir:
-        rsync_cmds.append('--exclude=.git/')
+        rsync_cmds.append('--exclude=.git')
 
     if pathspec:
         prefix = repo_info.prefix
